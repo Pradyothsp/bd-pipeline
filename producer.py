@@ -4,57 +4,66 @@ import time
 from confluent_kafka import Producer
 
 from log import logger
+from settings import BATCH_SIZE, INPUT_CSV_PATH, PRODUCER_CONF, TOPIC
 
 
-def delivery_report(err, msg):
+def delivery_report(err, msg, num_rows, message_count):
     if err is not None:
-        logger.error('Message delivery failed: {}'.format(err))
+        logger.error(
+            f"Failed to deliver message to {msg.topic()} [{msg.partition()}]: {err} - Message Count: {message_count[0]}")
     else:
-        logger.info('Message delivered to {} [{}]'.format(
-            msg.topic(), msg.partition()))
+        logger.info(
+            f"Message successfully delivered to {msg.topic()} [{msg.partition()}] - Offset: {msg.offset()} - Message Length (Rows): {num_rows} - Message Count: {message_count[0]}")
+
+    # Increment the message counter
+    message_count[0] += 1
 
 
 # Configure the Kafka producer
-conf = {
-    'bootstrap.servers': 'localhost:9092',
-    'queue.buffering.max.messages': 500000  # Increase the buffer size
-    # Adjust the maximum time a message can linger in the queue
-    # 'queue.buffering.max.ms': 1000
-}
-producer = Producer(conf)
+PRODUCER = Producer(PRODUCER_CONF)
 
-# Specify the topic
-topic = 'quickstart-events'  # Replace with the actual topic name
 
-# Specify the CSV file path
-# Replace with the actual path to your CSV file
-csv_file_path = 'data/data_2019_Oct.csv'
+# Initialize message counter
+message_count = [0]
 
-# Set the batch size
-batch_size = 5000  # Adjust as needed
 
 # Read data from the CSV file and produce messages in batches
-with open(csv_file_path, 'r') as file:
+with open(INPUT_CSV_PATH, 'r') as file:
     reader = csv.reader(file)
     rows = []
 
     for row in reader:
         rows.append(','.join(row))
 
-        if len(rows) == batch_size:
+        if len(rows) == BATCH_SIZE:
             # Produce the batch of messages
             messages = '\n'.join(rows)
-            producer.produce(topic, value=messages, callback=delivery_report)
+            PRODUCER.produce(
+                TOPIC,
+                value=messages,
+                callback=lambda err, msg,
+                rows=len(rows),
+                count=message_count: delivery_report(err, msg, rows, count)
+            )
 
             rows = []
             time.sleep(0.07)  # Introduce a slight delay
 
-            producer.flush()
+            PRODUCER.flush()
 
     # Produce any remaining messages in the last batch
     if rows:
         messages = '\n'.join(rows)
-        producer.produce(topic, value=messages, callback=delivery_report)
+        PRODUCER.produce(
+            TOPIC,
+            value=messages,
+            callback=lambda err, msg,
+            rows=len(rows),
+            count=message_count: delivery_report(err, msg, rows, count)
+        )
 
 # Wait for any outstanding messages to be delivered and delivery reports to be received
-producer.flush()
+PRODUCER.flush()
+
+# Log the total number of messages sent
+logger.info(f"Total number of messages sent to Kafka: {message_count[0]}")

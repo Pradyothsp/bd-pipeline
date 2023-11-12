@@ -6,18 +6,13 @@ import pyarrow.orc as orc
 from confluent_kafka import Consumer, KafkaError
 
 from log import logger
+from settings import CONSUMER_CONF, TOPIC
 
 # Configure the Kafka consumer
-conf = {
-    'bootstrap.servers': 'localhost:9092',
-    'group.id': 'my_consumer_group',  # Choose a consumer group ID
-    'auto.offset.reset': 'earliest'
-}
-consumer = Consumer(conf)
+CONSUMER = Consumer(CONSUMER_CONF)
 
 # Subscribe to the Kafka topic
-topic = 'quickstart-events'  # Replace with the actual topic name
-consumer.subscribe([topic])
+CONSUMER.subscribe([TOPIC])
 
 # Create an Arrow schema based on your data
 schema = pa.schema([
@@ -32,14 +27,10 @@ schema = pa.schema([
     ('user_session', pa.string())
 ])
 
-# # Create an ORC file writer
-# output_stream = io.BytesIO()
-# orc_writer = orc.RecordBatchFileWriter(output_stream, schema)
-
 
 try:
     while True:
-        msg = consumer.poll(timeout=1000)  # Adjust the timeout as needed
+        msg = CONSUMER.poll(timeout=10)  # Adjust the timeout as needed
         if msg is None:
             continue
         if msg.error():
@@ -54,11 +45,7 @@ try:
             # Process each line separately
             columns = {field.name: [] for field in schema}
 
-            # # Process each line separately
-            # rows = []
-
             for line in data:
-
                 row = line.split(',')
 
                 # Check if the third element can be converted to an integer (assuming product_id is an integer)
@@ -87,7 +74,7 @@ try:
             # Create a pyarrow.Table from the columns dictionary
             table = pa.table(columns)
 
-            uuid = uuid4()
+            uuid = uuid4()  # Generate a unique ID for the file
 
             # Write the table to ORC format
             output_file = f'output_data/output_{uuid}.orc'
@@ -99,4 +86,4 @@ except KeyboardInterrupt:
     pass
 finally:
     # Close the Kafka consumer
-    consumer.close()
+    CONSUMER.close()
