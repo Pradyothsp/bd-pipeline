@@ -1,0 +1,38 @@
+version: 1
+
+formatters:
+  simple:
+    format: "%(asctime)s %(name)s: %(message)s"
+  standard:
+    format: "%(asctime)s %(name)s %(levelname)s: %(message)s"
+  error:
+    format: "%(asctime)s %(levelname)s <PID %(process)d:%(processName)s> %(name)s.%(funcName)s(): %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: simple
+    stream: ext://sys.stdout
+
+  info_file_handler:
+    class: logging.FileHandler
+    level: INFO
+    filename: info.log
+    formatter: standard
+
+  error_file_handler:
+    class: logging.FileHandler
+    level: ERROR
+    filename: error.log
+    formatter: error
+
+loggers:
+  dev:
+    level: DEBUG
+    handlers: [info_file_handler, error_file_handler]
+    propagate: no
+
+root:
+  level: DEBUG
+  handlers: [console, info_file_handler, error_file_handler]

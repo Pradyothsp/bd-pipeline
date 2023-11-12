@@ -1,13 +1,16 @@
 import csv
-from confluent_kafka import Producer
 import time
+
+from confluent_kafka import Producer
+
+from log import logger
 
 
 def delivery_report(err, msg):
     if err is not None:
-        print('Message delivery failed: {}'.format(err))
+        logger.error('Message delivery failed: {}'.format(err))
     else:
-        print('Message delivered to {} [{}]'.format(
+        logger.info('Message delivered to {} [{}]'.format(
             msg.topic(), msg.partition()))
 
 
@@ -44,7 +47,7 @@ with open(csv_file_path, 'r') as file:
             producer.produce(topic, value=messages, callback=delivery_report)
 
             rows = []
-            time.sleep(0.1)  # Introduce a slight delay
+            time.sleep(0.07)  # Introduce a slight delay
 
             producer.flush()
 
