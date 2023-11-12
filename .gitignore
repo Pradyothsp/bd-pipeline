@@ -2,6 +2,7 @@
 kafka_2.13-3.6.0
 data
 output_data
+kafka_output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

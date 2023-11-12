@@ -6,7 +6,7 @@ import pyarrow.orc as orc
 from confluent_kafka import Consumer, KafkaError
 
 from log import logger
-from settings import CONSUMER_CONF, TOPIC
+from settings import CONSUMER_CONF, TOPIC, KAFKA_OUPPUT_FOLDER
 
 # Configure the Kafka consumer
 CONSUMER = Consumer(CONSUMER_CONF)
@@ -74,10 +74,8 @@ try:
             # Create a pyarrow.Table from the columns dictionary
             table = pa.table(columns)
 
-            uuid = uuid4()  # Generate a unique ID for the file
-
             # Write the table to ORC format
-            output_file = f'output_data/output_{uuid}.orc'
+            output_file = f'{KAFKA_OUPPUT_FOLDER}/output_{uuid4()}.orc'
             orc.write_table(table, output_file)
             logger.info(f'Wrote ORC file to {output_file}')
 

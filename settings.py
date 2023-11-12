@@ -1,19 +1,25 @@
 TOPIC = 'csv-event-data'
 
+SERVER_URL = 'localhost:9092'  # Kafka server URL
+
 
 # CONSUMER SETTINGS
 # Configure the Kafka consumer
+consumer_gropu_id = 'csv-event-consumer-group'
+
 CONSUMER_CONF = {
-    'bootstrap.servers': 'localhost:9092',
-    'group.id': 'csv-event-consumer-group',  # Choose a consumer group ID
+    'bootstrap.servers': SERVER_URL,
+    'group.id': f'{consumer_gropu_id}',  # Choose a consumer group ID
     'auto.offset.reset': 'earliest'
 }
+
+KAFKA_OUPPUT_FOLDER = 'kafka_output'
 
 
 # PRODUCER SETTINGS
 # Configure the Kafka producer
 PRODUCER_CONF = {
-    'bootstrap.servers': 'localhost:9092',
+    'bootstrap.servers': SERVER_URL,
     'queue.buffering.max.messages': 500000  # Increase the buffer size
 }
 
