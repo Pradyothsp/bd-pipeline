@@ -7,13 +7,7 @@ from confluent_kafka import Consumer, KafkaError
 
 from log import logger
 from settings import CONSUMER_CONF, KAFKA_OUPPUT_FOLDER, TOPIC
-
-
-# Configure the Kafka consumer
-CONSUMER = Consumer(CONSUMER_CONF)
-
-# Subscribe to the Kafka topic
-CONSUMER.subscribe([TOPIC])
+from utils import timeit
 
 
 def create_arrow_schema():
@@ -69,7 +63,8 @@ def write_orc_file(table):
     return output_file
 
 
-def process_kafka_messages():
+@timeit
+def process_kafka_messages(consumer):
     schema = create_arrow_schema()
 
     # Initialize a counter for log messages
@@ -77,7 +72,7 @@ def process_kafka_messages():
 
     try:
         while True:
-            msg = CONSUMER.poll(timeout=10)  # Adjust the timeout as needed
+            msg = consumer.poll(timeout=10)  # Adjust the timeout as needed
 
             if msg is None:
                 continue
@@ -116,8 +111,22 @@ def process_kafka_messages():
         pass
     finally:
         # Close the Kafka consumer
-        CONSUMER.close()
+        consumer.close()
 
 
 if __name__ == "__main__":
-    process_kafka_messages()
+    try:
+        # Configure the Kafka consumer
+        CONSUMER = Consumer(CONSUMER_CONF)
+
+        # Subscribe to the Kafka topic
+        CONSUMER.subscribe([TOPIC])
+
+        process_kafka_messages(CONSUMER)
+
+    except KafkaError as error:
+        logger.error(error)
+    finally:
+        # Close the Kafka consumer
+        if CONSUMER is not None:
+            CONSUMER.close()
