@@ -6,7 +6,7 @@ import pyarrow.orc as orc
 from confluent_kafka import Consumer, KafkaError
 
 from log import logger
-from settings import CONSUMER_CONF, TOPIC, KAFKA_OUPPUT_FOLDER
+from settings import CONSUMER_CONF, KAFKA_OUPPUT_FOLDER, TOPIC
 
 # Configure the Kafka consumer
 CONSUMER = Consumer(CONSUMER_CONF)
@@ -27,6 +27,9 @@ schema = pa.schema([
     ('user_session', pa.string())
 ])
 
+
+# Initialize a counter for log messages
+orc_file_counter = 0
 
 try:
     while True:
@@ -77,7 +80,10 @@ try:
             # Write the table to ORC format
             output_file = f'{KAFKA_OUPPUT_FOLDER}/output_{uuid4()}.orc'
             orc.write_table(table, output_file)
-            logger.info(f'Wrote ORC file to {output_file}')
+
+            # Increment the counter and log the message
+            orc_file_counter += 1
+            logger.info(f'Wrote ORC file {orc_file_counter} to {output_file}')
 
 
 except KeyboardInterrupt:

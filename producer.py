@@ -28,15 +28,33 @@ message_count = [0]
 
 
 # Read data from the CSV file and produce messages in batches
-with open(INPUT_CSV_PATH, 'r') as file:
-    reader = csv.reader(file)
-    rows = []
+for csv_file in INPUT_CSV_PATH:
+    with open(csv_file, 'r') as file:
+        logger.debug(f"Reading data from {csv_file}")
+        reader = csv.reader(file)
+        rows = []
 
-    for row in reader:
-        rows.append(','.join(row))
+        for row in reader:
+            rows.append(','.join(row))
 
-        if len(rows) == BATCH_SIZE:
-            # Produce the batch of messages
+            if len(rows) == BATCH_SIZE:
+                # Produce the batch of messages
+                messages = '\n'.join(rows)
+                PRODUCER.produce(
+                    TOPIC,
+                    value=messages,
+                    callback=lambda err, msg,
+                    rows=len(rows),
+                    count=message_count: delivery_report(err, msg, rows, count)
+                )
+
+                rows = []
+                time.sleep(0.07)  # Introduce a slight delay
+
+                PRODUCER.flush()
+
+        # Produce any remaining messages in the last batch
+        if rows:
             messages = '\n'.join(rows)
             PRODUCER.produce(
                 TOPIC,
@@ -45,22 +63,6 @@ with open(INPUT_CSV_PATH, 'r') as file:
                 rows=len(rows),
                 count=message_count: delivery_report(err, msg, rows, count)
             )
-
-            rows = []
-            time.sleep(0.07)  # Introduce a slight delay
-
-            PRODUCER.flush()
-
-    # Produce any remaining messages in the last batch
-    if rows:
-        messages = '\n'.join(rows)
-        PRODUCER.produce(
-            TOPIC,
-            value=messages,
-            callback=lambda err, msg,
-            rows=len(rows),
-            count=message_count: delivery_report(err, msg, rows, count)
-        )
 
 # Wait for any outstanding messages to be delivered and delivery reports to be received
 PRODUCER.flush()
