@@ -4,6 +4,10 @@ data
 output_data
 kafka_output
 spark_data
+spark_output
+
+# Mac OS files
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
